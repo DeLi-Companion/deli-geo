@@ -1,0 +1,32 @@
+name: deli-geo
+
+services:
+  php:
+    build:
+      dockerfile_inline: |
+        FROM php:8.5.12-cli-trixie
+        COPY --from=ghcr.io/mlocati/php-extension-installer:2.12.3 /usr/bin/install-php-extensions /usr/local/bin/
+        COPY --from=composer:2.10.3 /usr/bin/composer /usr/local/bin/composer
+        RUN install-php-extensions intl pdo_pgsql zip
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /library
+    volumes:
+      - .:/library
+    environment:
+      HOME: /tmp
+      DELI_GEO_TEST_DSN: "pgsql:host=postgres;port=5432;dbname=deli_geo;user=deli_geo;password=deli_geo"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgis/postgis:18-3.6
+    environment:
+      POSTGRES_USER: deli_geo
+      POSTGRES_PASSWORD: deli_geo
+      POSTGRES_DB: deli_geo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --host=127.0.0.1 --username=deli_geo --dbname=deli_geo"]
+      interval: 2s
+      timeout: 5s
+      retries: 30

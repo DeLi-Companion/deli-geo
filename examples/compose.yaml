@@ -1,0 +1,37 @@
+name: deli-geo-example
+
+services:
+  valhalla:
+    image: ghcr.io/valhalla/valhalla:3.9.1
+    command: ["valhalla_service", "/data/valhalla.json", "2"]
+    volumes:
+      - ${DELI_GEO_TILES_DIRECTORY:-./data/current}:/data:ro
+    ports:
+      - "127.0.0.1:8002:8002"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8002/status"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+
+  vroom:
+    image: ghcr.io/vroom-project/vroom-docker:v1.15.0
+    environment:
+      VROOM_ROUTER: valhalla
+    volumes:
+      - ./vroom:/conf
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+
+  geo-build:
+    image: ${GEO_BUILD_IMAGE:-ghcr.io/deli-companion/geo-build:latest}
+    profiles: ["build"]
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    environment:
+      DELI_GEO_SOURCE_URL: ${DELI_GEO_SOURCE_URL:-https://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf}
+      DELI_GEO_REGIONS: ${DELI_GEO_REGIONS:-berlin}
+    volumes:
+      - ./data:/data

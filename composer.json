@@ -1,0 +1,48 @@
+{
+    "name": "deli-companion/deli-geo",
+    "description": "German address normalization, loading and lookup on PostGIS, and the geo build for DeLi-Companion.",
+    "type": "library",
+    "license": "Apache-2.0",
+    "require": {
+        "php": "^8.5",
+        "ext-intl": "*",
+        "ext-mbstring": "*",
+        "ext-pdo_pgsql": "*",
+        "ext-zlib": "*"
+    },
+    "require-dev": {
+        "laravel/pint": "1.32.1",
+        "pestphp/pest": "5.3.4",
+        "phpstan/phpstan": "2.3.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "DeLiCompanion\\Geo\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "DeLiCompanion\\Geo\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "lint": "pint --test",
+        "format": "pint",
+        "analyse": "phpstan analyse --no-progress --memory-limit=512M",
+        "test": "pest --testsuite=Unit,Integration",
+        "test:build": "pest --testsuite=Build",
+        "check": [
+            "@lint",
+            "@analyse",
+            "@test"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

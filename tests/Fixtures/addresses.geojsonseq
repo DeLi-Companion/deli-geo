@@ -1,0 +1,10 @@
+{"type":"Feature","geometry":{"type":"Point","coordinates":[13.3796,52.5302]},"properties":{"addr:street":"Invalidenstraße","addr:housenumber":"43","addr:postcode":"10115","addr:city":"Berlin"}}
+{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[13.3810,52.5300],[13.3816,52.5300],[13.3816,52.5304],[13.3810,52.5304],[13.3810,52.5300]]]},"properties":{"addr:street":"Invalidenstraße","addr:housenumber":"44","addr:postcode":"10115","addr:city":"Berlin"}}
+{"type":"Feature","geometry":{"type":"Point","coordinates":[13.3805,52.5302]},"properties":{"addr:street":"Invalidenstraße","addr:housenumber":"44","addr:postcode":"10115","addr:city":"Berlin"}}
+{"type":"Feature","geometry":{"type":"Point","coordinates":[13.3833,52.5290]},"properties":{"addr:street":"Chausseestraße","addr:housenumber":"125","addr:city":"Berlin"}}
+{"type":"Feature","geometry":{"type":"Point","coordinates":[13.4003,52.5293]},"properties":{"addr:street":"Torstraße","addr:housenumber":"12a","addr:postcode":"10119","addr:city":"Berlin"}}
+{"type":"Feature","geometry":{"type":"Point","coordinates":[13.4086,52.5186]},"properties":{"addr:street":"Rathausstraße","addr:housenumber":"15","addr:postcode":"10178","addr:city":"Berlin"}}
+{"type":"Feature","geometry":{"type":"Point","coordinates":[13.3977,52.5194]},"properties":{"addr:place":"Museumsinsel","addr:housenumber":"1","addr:postcode":"10178","addr:city":"Berlin"}}
+{"type":"Feature","geometry":{"type":"Point","coordinates":[13.3799,52.5304]},"properties":{"addr:street":"Invalidenstraße","addr:housenumber":"ohne","addr:postcode":"10115"}}
+{"type":"Feature","geometry":{"type":"Point","coordinates":[13.3801,52.5301]},"properties":{"addr:housenumber":"5","addr:postcode":"10115"}}
+{"type":"Feature","geometry":{"type":"Point","coordinates":[13.6000,52.4000]},"properties":{"addr:street":"Waldweg","addr:housenumber":"7"}}
