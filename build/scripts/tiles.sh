@@ -61,6 +61,7 @@ main() {
         > "${build_config}"
 
     log_info "Building administrative areas"
+    log_info "valhalla_build_admins logs 'NOT NULL constraint failed: admin_access.admin_id' for every country outside the configured regions; those lines are expected"
     valhalla_build_admins --config "${build_config}" "${regions_extract}"
 
     log_info "Building routing tiles"
