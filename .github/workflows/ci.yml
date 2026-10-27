@@ -138,6 +138,15 @@ jobs:
         run: build/scripts/activate_tiles.sh "${DELI_GEO_BUILDS_DIRECTORY}" "${DELI_GEO_BUILD_ID}"
         env:
           DELI_GEO_COMPOSE_FILE: examples/compose.yaml
+      - name: Record reference responses
+        run: build/smoke/record_responses.sh "${RUNNER_TEMP}/reference-responses"
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reference-responses
+          path: ${{ runner.temp }}/reference-responses
+          if-no-files-found: ignore
+          retention-days: 30
       - if: failure()
         name: Show the geo containers' logs
         run: docker compose --file examples/compose.yaml logs --no-color || true

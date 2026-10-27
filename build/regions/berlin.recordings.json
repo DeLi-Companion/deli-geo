@@ -1,0 +1,150 @@
+[
+    {
+        "name": "valhalla-status",
+        "service": "valhalla",
+        "method": "GET",
+        "path": "/status",
+        "expected_status": 200
+    },
+    {
+        "name": "valhalla-matrix",
+        "service": "valhalla",
+        "method": "POST",
+        "path": "/sources_to_targets",
+        "expected_status": 200,
+        "body": {
+            "sources": [
+                {"lat": 52.5291, "lon": 13.3765},
+                {"lat": 52.5302, "lon": 13.3796},
+                {"lat": 52.5163, "lon": 13.3777},
+                {"lat": 52.5186, "lon": 13.4086},
+                {"lat": 52.5219, "lon": 13.4132}
+            ],
+            "targets": [
+                {"lat": 52.5291, "lon": 13.3765},
+                {"lat": 52.5302, "lon": 13.3796},
+                {"lat": 52.5163, "lon": 13.3777},
+                {"lat": 52.5186, "lon": 13.4086},
+                {"lat": 52.5219, "lon": 13.4132}
+            ],
+            "costing": "auto",
+            "units": "kilometers",
+            "verbose": true
+        }
+    },
+    {
+        "name": "valhalla-route",
+        "service": "valhalla",
+        "method": "POST",
+        "path": "/route",
+        "expected_status": 200,
+        "body": {
+            "locations": [
+                {"lat": 52.5291, "lon": 13.3765, "type": "break"},
+                {"lat": 52.5302, "lon": 13.3796, "type": "break"},
+                {"lat": 52.5163, "lon": 13.3777, "type": "break"}
+            ],
+            "costing": "auto",
+            "units": "kilometers",
+            "directions_type": "none",
+            "shape_format": "polyline6"
+        }
+    },
+    {
+        "name": "valhalla-route-outside",
+        "service": "valhalla",
+        "method": "POST",
+        "path": "/route",
+        "expected_status": 400,
+        "body": {
+            "locations": [
+                {"lat": 52.5291, "lon": 13.3765, "type": "break"},
+                {"lat": 48.1374, "lon": 11.5755, "type": "break"}
+            ],
+            "costing": "auto",
+            "units": "kilometers",
+            "directions_type": "none",
+            "shape_format": "polyline6"
+        }
+    },
+    {
+        "name": "vroom-health",
+        "service": "vroom",
+        "method": "GET",
+        "path": "/health",
+        "expected_status": 200
+    },
+    {
+        "name": "vroom-optimize",
+        "service": "vroom",
+        "method": "POST",
+        "path": "/",
+        "expected_status": 200,
+        "body": {
+            "vehicles": [
+                {"id": 1, "profile": "auto", "start": [13.3765, 52.5291], "end": [13.3765, 52.5291], "time_window": [0, 86400]}
+            ],
+            "jobs": [
+                {"id": 1, "location": [13.3796, 52.5302], "service": 120},
+                {"id": 2, "location": [13.3777, 52.5163], "service": 120, "time_windows": [[0, 7200]]},
+                {"id": 3, "location": [13.4086, 52.5186], "service": 120},
+                {"id": 4, "location": [13.4132, 52.5219], "service": 120}
+            ],
+            "options": {"g": true}
+        }
+    },
+    {
+        "name": "vroom-optimize-open-end",
+        "service": "vroom",
+        "method": "POST",
+        "path": "/",
+        "expected_status": 200,
+        "body": {
+            "vehicles": [
+                {"id": 1, "profile": "auto", "start": [13.3765, 52.5291], "time_window": [0, 86400]}
+            ],
+            "jobs": [
+                {"id": 1, "location": [13.3796, 52.5302], "service": 120},
+                {"id": 2, "location": [13.3777, 52.5163], "service": 120},
+                {"id": 3, "location": [13.4086, 52.5186], "service": 120},
+                {"id": 4, "location": [13.4132, 52.5219], "service": 120}
+            ],
+            "options": {"g": true}
+        }
+    },
+    {
+        "name": "vroom-optimize-unassigned",
+        "service": "vroom",
+        "method": "POST",
+        "path": "/",
+        "expected_status": 200,
+        "body": {
+            "vehicles": [
+                {"id": 1, "profile": "auto", "start": [13.3765, 52.5291], "end": [13.3765, 52.5291], "time_window": [0, 86400]}
+            ],
+            "jobs": [
+                {"id": 1, "location": [13.3796, 52.5302], "service": 120},
+                {"id": 2, "location": [13.3777, 52.5163], "service": 120, "time_windows": [[0, 1]]},
+                {"id": 3, "location": [13.4086, 52.5186], "service": 120}
+            ],
+            "options": {"g": true}
+        }
+    },
+    {
+        "name": "vroom-optimize-outside",
+        "service": "vroom",
+        "method": "POST",
+        "path": "/",
+        "expected_status": null,
+        "body": {
+            "vehicles": [
+                {"id": 1, "profile": "auto", "start": [13.3765, 52.5291], "end": [13.3765, 52.5291], "time_window": [0, 86400]}
+            ],
+            "jobs": [
+                {"id": 1, "location": [13.3796, 52.5302], "service": 120},
+                {"id": 2, "location": [11.5755, 48.1374], "service": 120}
+            ],
+            "options": {"g": true}
+        }
+    }
+]
