@@ -78,6 +78,8 @@ The format of a build is described in [docs/format.md](docs/format.md).
 
 `build/scripts/activate_tiles.sh BUILDS_DIRECTORY BUILD_ID` points the tiles link `DELI_GEO_TILES_LINK` at a build, recreates the Valhalla container of the Compose file `DELI_GEO_COMPOSE_FILE` (both required), runs `build/smoke/smoke.sh` (matrix, route and one VROOM optimization) and switches back to the previous build when the smoke test fails.
 
+`build/smoke/record_responses.sh OUTPUT_DIRECTORY` sends the reference requests in `build/regions/<region>.recordings.json` to Valhalla and VROOM and stores each request, response and HTTP status. CI publishes the Berlin recordings as the `reference-responses` artifact, so client tests can use real responses.
+
 ### Example stack
 
 [examples/compose.yaml](examples/compose.yaml) runs Valhalla 3.9.1, VROOM 1.15.0 on Valhalla and the build image. `GEO_BUILD_IMAGE` must name a published commit tag; there is no `latest` tag.
