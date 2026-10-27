@@ -1,0 +1,4 @@
+/vendor/
+/.phpunit.cache/
+/examples/data/
+/examples/vroom/access.log

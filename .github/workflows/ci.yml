@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  library:
+    name: Library
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgis/postgis:18-3.6
+        env:
+          POSTGRES_USER: deli_geo
+          POSTGRES_PASSWORD: deli_geo
+          POSTGRES_DB: deli_geo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --host=127.0.0.1 --username=deli_geo --dbname=deli_geo"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      DELI_GEO_TEST_DSN: "pgsql:host=127.0.0.1;port=5432;dbname=deli_geo;user=deli_geo;password=deli_geo"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: "8.5"
+          extensions: intl, pdo_pgsql
+          coverage: none
+          tools: composer:2.10.3
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: composer lint
+      - run: composer analyse
+      - run: composer test
+      - run: composer audit
+
+  tooling:
+    name: Scripts and workflows
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: docker run --rm --volume "$PWD:/repository" --workdir /repository koalaman/shellcheck:v0.11.0 --external-sources --source-path=SCRIPTDIR build/scripts/*.sh build/smoke/*.sh
+      - run: docker run --rm --volume "$PWD:/repository" --workdir /repository rhysd/actionlint:1.7.12 -color
+
+  geo-build:
+    name: Geo build (Berlin)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    services:
+      postgres:
+        image: postgis/postgis:18-3.6
+        env:
+          POSTGRES_USER: deli_geo
+          POSTGRES_PASSWORD: deli_geo
+          POSTGRES_DB: deli_geo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --host=127.0.0.1 --username=deli_geo --dbname=deli_geo"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      GEO_BUILD_IMAGE: ghcr.io/deli-companion/geo-build:candidate-${{ github.sha }}
+      DELI_GEO_TEST_DSN: "pgsql:host=127.0.0.1;port=5432;dbname=deli_geo;user=deli_geo;password=deli_geo"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          cleanup: false
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        env:
+          DOCKER_BUILD_SUMMARY: "false"
+          DOCKER_BUILD_RECORD_UPLOAD: "false"
+        with:
+          context: build
+          load: true
+          tags: ${{ env.GEO_BUILD_IMAGE }}
+          build-args: BUILD_JOBS=4
+          cache-from: type=gha,scope=geo-build
+          cache-to: type=gha,scope=geo-build,mode=max
+      - name: Build the Berlin geo data
+        run: |
+          build_id="$(date --utc +%F)"
+          data_directory="${RUNNER_TEMP}/geo"
+          mkdir -p "${data_directory}"
+          docker run --rm --user "$(id -u):$(id -g)" \
+            --volume "${data_directory}:/data" \
+            --env DELI_GEO_SOURCE_URL=https://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf \
+            --env DELI_GEO_REGIONS=berlin \
+            --env DELI_GEO_BUILD_ID="${build_id}" \
+            --env DELI_GEO_BUILD_JOBS=4 \
+            "${GEO_BUILD_IMAGE}"
+          {
+            echo "DELI_GEO_BUILD_ID=${build_id}"
+            echo "DELI_GEO_BUILDS_DIRECTORY=${data_directory}/builds"
+            echo "DELI_GEO_BUILD_DIRECTORY=${data_directory}/builds/${build_id}"
+            echo "DELI_GEO_TILES_LINK=${data_directory}/current"
+            echo "DELI_GEO_TILES_DIRECTORY=${data_directory}/current"
+          } >> "${GITHUB_ENV}"
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: "8.5"
+          extensions: intl, pdo_pgsql
+          coverage: none
+          tools: composer:2.10.3
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Load the build with the library
+        run: composer test:build
+        env:
+          COMPOSER_PROCESS_TIMEOUT: "0"
+      - name: Start VROOM
+        run: docker compose --file examples/compose.yaml up --detach --wait vroom
+      - name: Activate the tiles and run the smoke test
+        run: build/scripts/activate_tiles.sh "${DELI_GEO_BUILDS_DIRECTORY}" "${DELI_GEO_BUILD_ID}"
+        env:
+          DELI_GEO_COMPOSE_FILE: examples/compose.yaml
+      - if: failure()
+        name: Show the geo containers' logs
+        run: docker compose --file examples/compose.yaml logs --no-color || true
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: docker push "${GEO_BUILD_IMAGE}"
+
+  publish:
+    name: Publish image
+    needs: [library, tooling, geo-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      packages: write
+    env:
+      CANDIDATE_IMAGE: ghcr.io/deli-companion/geo-build:candidate-${{ github.sha }}
+      GEO_BUILD_IMAGE: ghcr.io/deli-companion/geo-build:${{ github.sha }}
+    steps:
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: docker buildx imagetools create --prefer-index=false --tag "${GEO_BUILD_IMAGE}" "${CANDIDATE_IMAGE}"
